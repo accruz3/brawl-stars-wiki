@@ -9,23 +9,62 @@ function App() {
     const [comments, setComments] = useState({});
     const [newComment, setNewComment] = useState('');
     const [commentAuthor, setCommentAuthor] = useState('');
-    const [ip, setIp] = useState('');
-    const handleAddComment = (brawlerId) => {
-        if (!newComment.trim() || !commentAuthor.trim()) return;
-        const comment = {
-            id: Date.now(),
-            author: commentAuthor,
-            text: newComment,
-            date: new Date().toLocaleString()
-        };
-        setComments(prev => ({
-            ...prev,
-            [brawlerId]: [...(prev[brawlerId] || []), comment]
-        }));
-        setNewComment('');
-    };
-
+    const [newCommentText, setNewCommentText] = useState('');
+    const [commentsLoading, setCommentsLoading] = useState(false);
+    const [commentLoading, setCommentLoading] = useState(false);
+    const [commentCount, setCommentCount] = useState({});
     const ALL_BRAWLERS_API = 'https://ylznvr2bhf.execute-api.ap-southeast-1.amazonaws.com/default/GetAllBrawlers';
+    const ADD_COMMENT_API = 'https://s6qi0gukc4.execute-api.ap-southeast-1.amazonaws.com/default/AddComment';
+    const GET_COMMENTS_API = 'https://nmd5e5016l.execute-api.ap-southeast-1.amazonaws.com/default/GetAllComments';
+
+
+
+    const [ip, setIp] = useState('');
+    const handleAddComment = async (brawlerId) => {
+        if (!newCommentText.trim()) return;
+
+        setCommentLoading(true);
+        try {
+            const response = await fetch(ADD_COMMENT_API, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    brawlerId: String(brawlerId),  // Convert to string
+                    text: newCommentText.trim()
+                })
+            });
+
+            if (response.ok) {
+                const anonNumber = (commentCount[brawlerId] || 0) + 1;
+                const comment = {
+                    commentId: `${brawlerId}-${Date.now()}`,  // Local temp ID for display
+                    author: `Anon${anonNumber}`,
+                    commentText: newCommentText.trim(),
+                    timestamp: Math.floor(Date.now() / 1000),
+                    date: new Date().toLocaleString()
+                };
+
+                setComments(prev => ({
+                    ...prev,
+                    [brawlerId]: [comment, ...(prev[brawlerId] || [])]
+                }));
+
+                setCommentCount(prev => ({
+                    ...prev,
+                    [brawlerId]: anonNumber
+                }));
+
+                setNewCommentText('');
+            } else {
+                alert('Failed to add comment. Please try again.');
+            }
+        } catch (err) {
+            console.error('Error adding comment:', err);
+            alert('Error adding comment');
+        } finally {
+            setCommentLoading(false);
+        }
+    };
 
     useEffect(() => {
         fetchBrawlers();
@@ -63,7 +102,7 @@ function App() {
         }
     };
 
-        const fetchHostname = async () => {
+    const fetchHostname = async () => {
         try {
             const response = await fetch('/hostname.txt');
             if (response.ok) {
@@ -77,7 +116,7 @@ function App() {
         }
     };
 
-    const fetchComments = async (brawlerId) => {
+const fetchComments = async (brawlerId) => {
         try {
             setCommentsLoading(true);
             const response = await fetch(`${GET_COMMENTS_API}?brawlerId=${encodeURIComponent(brawlerId)}`);
