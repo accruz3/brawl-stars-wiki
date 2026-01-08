@@ -1,1 +1,2 @@
-# brawl-stars-wiki
+# brawlstars-wiki
+
