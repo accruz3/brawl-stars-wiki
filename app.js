@@ -64,15 +64,6 @@ function App() {
 
     useEffect(() => {
         fetchBrawlers();
-        const handlePopState = () => {
-            const path = window.location.pathname;
-            if (path === '/' || path === '/index.html') {
-                setView('grid');
-                setSelectedBrawler(null);
-            }
-        };
-        window.addEventListener('popstate', handlePopState);
-        return () => window.removeEventListener('popstate', handlePopState);
     }, []);
 
     useEffect(() => {
@@ -126,13 +117,11 @@ function App() {
     const handleBrawlerClick = (brawler) => {
         setSelectedBrawler(brawler);
         setView('detail');
-        window.history.pushState({ brawlerId: brawler.Id }, '', `/brawler/${brawler.Id}`);
     };
 
     const handleBackToGrid = () => {
         setView('grid');
         setSelectedBrawler(null);
-        window.history.pushState({}, '', '/');
     };
 
     return (
