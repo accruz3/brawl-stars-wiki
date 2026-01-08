@@ -296,7 +296,4 @@ app.get('/', (req, res) => {
 
 app.listen(PORT, () => {
     console.log(`🚀 Server running at http://localhost:${PORT}`);
-    console.log(`📝 API Endpoints:`);
-    console.log(`   GET /api/brawlers - Get all brawlers`);
-    console.log(`   GET /api/brawlers/:id - Get specific brawler`);
 });

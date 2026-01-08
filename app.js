@@ -9,6 +9,8 @@ function App() {
     const [error, setError] = useState(null);
     const [view, setView] = useState('grid');
 
+    const ALL_BRAWLERS_API = 'https://ylznvr2bhf.execute-api.ap-southeast-1.amazonaws.com/default/GetAllBrawlers';
+
     useEffect(() => {
         fetchBrawlers();
         const handlePopState = () => {
@@ -25,7 +27,7 @@ function App() {
     const fetchBrawlers = async () => {
         try {
             setLoading(true);
-            const response = await fetch('/api/brawlers');
+            const response = await fetch(ALL_BRAWLERS_API);
             if (!response.ok) throw new Error('Failed to fetch brawlers');
             const data = await response.json();
             setBrawlers(data);
@@ -101,7 +103,7 @@ function App() {
                                             onClick={() => handleBrawlerClick(brawler)}
                                         >
                                             <div className="brawler-card-image">
-                                                <img src="placeholder.png" alt={brawler.Name} />
+                                                <img src={brawler.ImageLink} alt={brawler.Name} />
                                                 <div className="brawler-card-name-overlay">{brawler.Name}</div>
                                             </div>
                                         </div>
@@ -116,7 +118,7 @@ function App() {
                                     <>
                                         <div className="detail-header mb-4 text-center">
                                             <img 
-                                                src="../placeholder.png" 
+                                                src={selectedBrawler.ImageLink} 
                                                 alt={selectedBrawler.Name} 
                                                 style={{ width: '180px', height: '180px', objectFit: 'cover', borderRadius: '1rem', marginBottom: '1rem', background: '#e0e0e0' }} 
                                             />
@@ -133,19 +135,19 @@ function App() {
                                         <div className="stats mb-4">
                                             <div className="stat" style={{ color: '#333', background: '#f7f7f7', borderRadius: 8 }}>
                                                 <div className="stat-label" style={{ color: '#444' }}>Health (Lv. 11)</div>
-                                                <div className="stat-value" style={{ color: '#0a68bf' }}>{selectedBrawler.HealthByLevel['11']}</div>
+                                                <div className="stat-value" style={{ color: '#0a68bf' }}>{selectedBrawler.HealthByLevel?.['11'] || 'N/A'}</div>
                                             </div>
                                             <div className="stat" style={{ color: '#333', background: '#f7f7f7', borderRadius: 8 }}>
                                                 <div className="stat-label" style={{ color: '#444' }}>Attack DMG</div>
-                                                <div className="stat-value" style={{ color: '#0a68bf' }}>{selectedBrawler.Attack.DamagePerShellLevel11}</div>
+                                                <div className="stat-value" style={{ color: '#0a68bf' }}>{selectedBrawler.Attack?.Damage|| 'N/A'}</div>
                                             </div>
                                             <div className="stat" style={{ color: '#333', background: '#f7f7f7', borderRadius: 8 }}>
                                                 <div className="stat-label" style={{ color: '#444' }}>Range</div>
-                                                <div className="stat-value" style={{ color: '#0a68bf' }}>{selectedBrawler.Attack.Range}</div>
+                                                <div className="stat-value" style={{ color: '#0a68bf' }}>{selectedBrawler.Attack?.Range || 'N/A'}</div>
                                             </div>
                                             <div className="stat" style={{ color: '#333', background: '#f7f7f7', borderRadius: 8 }}>
                                                 <div className="stat-label" style={{ color: '#444' }}>Reload</div>
-                                                <div className="stat-value" style={{ color: '#0a68bf' }}>{selectedBrawler.Attack.Reload}s</div>
+                                                <div className="stat-value" style={{ color: '#0a68bf' }}>{selectedBrawler.Attack?.Reload ? `${selectedBrawler.Attack.Reload}s` : 'N/A'}</div>
                                             </div>
                                         </div>
 
@@ -157,35 +159,41 @@ function App() {
                                                     <div className="ability-content">
                                                         <div className="ability-name" style={{ color: '#0a68bf' }}>Attack</div>
                                                         <div className="ability-stats">
-                                                            <span>DMG: {selectedBrawler.Attack.DamagePerShellLevel11}</span>
-                                                            <span>Range: {selectedBrawler.Attack.Range}</span>
-                                                            <span>Projectiles: {selectedBrawler.Attack.Projectiles}</span>
-                                                            <span>Reload: {selectedBrawler.Attack.Reload}s</span>
+                                                            <span>DMG: {selectedBrawler.Attack?.DamagePerShellLevel11 || selectedBrawler.Attack?.Damage || 'N/A'}</span>
+                                                            <span>Range: {selectedBrawler.Attack?.Range || 'N/A'}</span>
+                                                            <span>Projectiles: {selectedBrawler.Attack?.Projectiles || 'N/A'}</span>
+                                                            <span>Reload: {selectedBrawler.Attack?.Reload ? `${selectedBrawler.Attack.Reload}s` : 'N/A'}</span>
                                                         </div>
                                                     </div>
                                                 </div>
 
-                                                <div className="ability" style={{ background: '#f7f7f7', color: '#222', borderRadius: 8 }}>
-                                                    <div className="ability-badge super">SUPER</div>
-                                                    <div className="ability-content">
-                                                        <div className="ability-name" style={{ color: '#0a68bf' }}>Super Attack</div>
-                                                        <div className="ability-stats">
-                                                            <span>DMG: {selectedBrawler.Super.DamagePerShellLevel11}</span>
-                                                            <span>Range: {selectedBrawler.Super.Range}</span>
-                                                            <span>Projectiles: {selectedBrawler.Super.Projectiles}</span>
+                                                {selectedBrawler.Super && selectedBrawler.Super.Range && (
+                                                    <div className="ability" style={{ background: '#f7f7f7', color: '#222', borderRadius: 8 }}>
+                                                        <div className="ability-badge super">SUPER</div>
+                                                        <div className="ability-content">
+                                                            <div className="ability-name" style={{ color: '#0a68bf' }}>Super Attack</div>
+                                                            <div className="ability-stats">
+                                                                {selectedBrawler.Super.DamagePerShellLevel11 && <span>DMG: {selectedBrawler.Super.Damage}</span>}
+                                                                <span>Range: {selectedBrawler.Super.Range}</span>
+                                                                {selectedBrawler.Super.Projectiles && <span>Projectiles: {selectedBrawler.Super.Projectiles}</span>}
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
+                                                )}
 
-                                                <div className="ability" style={{ background: '#f7f7f7', color: '#222', borderRadius: 8 }}>
-                                                    <div className="ability-badge starpower">STAR<br />POWER</div>
-                                                    <div className="ability-content">
-                                                        <div className="ability-name" style={{ color: '#0a68bf' }}>{selectedBrawler.StarPower.Name}</div>
-                                                        <div className="ability-desc" style={{ color: '#444' }}>{selectedBrawler.StarPower.Description}</div>
+                                                {selectedBrawler.StarPower && selectedBrawler.StarPower.Name && (
+                                                    <div className="ability" style={{ background: '#f7f7f7', color: '#222', borderRadius: 8 }}>
+                                                        <div className="ability-badge starpower">STAR<br />POWER</div>
+                                                        <div className="ability-content">
+                                                            <div className="ability-name" style={{ color: '#0a68bf' }}>{selectedBrawler.StarPower.Name}</div>
+                                                            {selectedBrawler.StarPower.Description && (
+                                                                <div className="ability-desc" style={{ color: '#444' }}>{selectedBrawler.StarPower.Description}</div>
+                                                            )}
+                                                        </div>
                                                     </div>
-                                                </div>
+                                                )}
 
-                                                {selectedBrawler.Gadgets.map((gadget, idx) => (
+                                                {selectedBrawler.Gadgets && selectedBrawler.Gadgets.map((gadget, idx) => (
                                                     <div key={idx} className="ability" style={{ background: '#f7f7f7', color: '#222', borderRadius: 8 }}>
                                                         <div className="ability-badge gadget">GADGET {idx + 1}</div>
                                                         <div className="ability-content">
