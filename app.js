@@ -1,7 +1,5 @@
 const { useState, useEffect } = React;
 
-
-
 function App() {
     const [brawlers, setBrawlers] = useState([]);
     const [selectedBrawler, setSelectedBrawler] = useState(null);
@@ -9,25 +7,60 @@ function App() {
     const [error, setError] = useState(null);
     const [view, setView] = useState('grid');
     const [comments, setComments] = useState({});
-    const [newComment, setNewComment] = useState('');
-    const [commentAuthor, setCommentAuthor] = useState('');
-
-    const handleAddComment = (brawlerId) => {
-        if (!newComment.trim() || !commentAuthor.trim()) return;
-        const comment = {
-            id: Date.now(),
-            author: commentAuthor,
-            text: newComment,
-            date: new Date().toLocaleString()
-        };
-        setComments(prev => ({
-            ...prev,
-            [brawlerId]: [...(prev[brawlerId] || []), comment]
-        }));
-        setNewComment('');
-    };
+    const [newCommentText, setNewCommentText] = useState('');
+    const [commentLoading, setCommentLoading] = useState(false);
+    const [commentCount, setCommentCount] = useState({});
+    const [commentsLoading, setCommentsLoading] = useState(false);
 
     const ALL_BRAWLERS_API = 'https://ylznvr2bhf.execute-api.ap-southeast-1.amazonaws.com/default/GetAllBrawlers';
+    const ADD_COMMENT_API = 'https://s6qi0gukc4.execute-api.ap-southeast-1.amazonaws.com/default/AddComment';
+    const GET_COMMENTS_API = 'https://nmd5e5016l.execute-api.ap-southeast-1.amazonaws.com/default/GetAllComments';
+
+    const handleAddComment = async (brawlerId) => {
+        if (!newCommentText.trim()) return;
+        
+        setCommentLoading(true);
+        try {
+            const response = await fetch(ADD_COMMENT_API, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    brawlerId: String(brawlerId),  // Convert to string
+                    text: newCommentText.trim()
+                })
+            });
+
+            if (response.ok) {
+                const anonNumber = (commentCount[brawlerId] || 0) + 1;
+                const comment = {
+                    commentId: `${brawlerId}-${Date.now()}`,  // Local temp ID for display
+                    author: `Anon${anonNumber}`,
+                    commentText: newCommentText.trim(),
+                    timestamp: Math.floor(Date.now() / 1000),
+                    date: new Date().toLocaleString()
+                };
+                
+                setComments(prev => ({
+                    ...prev,
+                    [brawlerId]: [comment, ...(prev[brawlerId] || [])]
+                }));
+                
+                setCommentCount(prev => ({
+                    ...prev,
+                    [brawlerId]: anonNumber
+                }));
+                
+                setNewCommentText('');
+            } else {
+                alert('Failed to add comment. Please try again.');
+            }
+        } catch (err) {
+            console.error('Error adding comment:', err);
+            alert('Error adding comment');
+        } finally {
+            setCommentLoading(false);
+        }
+    };
 
     useEffect(() => {
         fetchBrawlers();
@@ -42,6 +75,12 @@ function App() {
         return () => window.removeEventListener('popstate', handlePopState);
     }, []);
 
+    useEffect(() => {
+        if (selectedBrawler && view === 'detail') {
+            fetchComments(selectedBrawler.Id);
+        }
+    }, [selectedBrawler, view]);
+
     const fetchBrawlers = async () => {
         try {
             setLoading(true);
@@ -55,6 +94,32 @@ function App() {
             console.error('Error fetching brawlers:', err);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchComments = async (brawlerId) => {
+        try {
+            setCommentsLoading(true);
+            const response = await fetch(`${GET_COMMENTS_API}?brawlerId=${encodeURIComponent(brawlerId)}`);
+            if (!response.ok) throw new Error('Failed to fetch comments');
+            const data = await response.json();
+            const list = Array.isArray(data) ? data : [];
+            const filtered = list.filter(c => String(c.brawlerId) === String(brawlerId));
+            const sorted = filtered.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+            const total = sorted.length;
+            const normalized = sorted.map((c, idx) => ({
+                ...c,
+                author: c.author || `Anon${total - idx}`,
+                date: c.timestamp ? new Date(c.timestamp * 1000).toLocaleString() : '',
+                commentText: c.commentText || c.text || ''
+            }));
+
+            setComments(prev => ({ ...prev, [brawlerId]: normalized }));
+            setCommentCount(prev => ({ ...prev, [brawlerId]: normalized.length }));
+        } catch (err) {
+            console.error('Error fetching comments:', err);
+        } finally {
+            setCommentsLoading(false);
         }
     };
 
@@ -236,31 +301,34 @@ function App() {
                                                 <textarea
                                                     className="form-control mb-2"
                                                     placeholder="Write a comment..."
-                                                    value={newComment}
-                                                    onChange={(e) => setNewComment(e.target.value)}
+                                                    value={newCommentText}
+                                                    onChange={(e) => setNewCommentText(e.target.value)}
                                                     rows="3"
                                                     style={{ background: '#fff', color: '#333' }}
                                                 />
                                                 <button 
                                                     className="btn btn-primary"
                                                     onClick={() => handleAddComment(selectedBrawler.Id)}
+                                                    disabled={commentLoading || !newCommentText.trim()}
                                                 >
-                                                    Post Comment
+                                                    {commentLoading ? 'Posting...' : 'Post Comment'}
                                                 </button>
                                             </div>
 
                                             {/* Comments List */}
                                             <div className="comments-list">
-                                                {(comments[selectedBrawler.Id] || []).length === 0 ? (
+                                                {commentsLoading ? (
+                                                    <p style={{ color: '#FFF' }}>Loading comments...</p>
+                                                ) : (comments[selectedBrawler.Id] || []).length === 0 ? (
                                                     <p style={{ color: '#FFF' }}>No comments yet. Be the first to comment!</p>
                                                 ) : (
                                                     (comments[selectedBrawler.Id] || []).map(comment => (
-                                                        <div key={comment.id} className="comment mb-3 p-3" style={{ background: '#f7f7f7', borderRadius: 8 }}>
+                                                        <div key={comment.commentId || comment.timestamp} className="comment mb-3 p-3" style={{ background: '#f7f7f7', borderRadius: 8 }}>
                                                             <div className="d-flex justify-content-between align-items-center mb-2">
                                                                 <strong style={{ color: '#0a68bf' }}>{comment.author}</strong>
                                                                 <small style={{ color: '#888' }}>{comment.date}</small>
                                                             </div>
-                                                            <p style={{ color: '#FFF', margin: 0 }}>{comment.text}</p>
+                                                            <p style={{ color: '#333', margin: 0 }}>{comment.commentText}</p>
                                                         </div>
                                                     ))
                                                 )}
