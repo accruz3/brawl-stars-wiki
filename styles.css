@@ -4,20 +4,29 @@
     box-sizing: border-box;
 }
 
+@font-face {
+    font-family: 'NougatCustom';
+    /* A custom name for your font */
+    src:
+        url('/fonts/Nougat-ExtraBlack.ttf') format('truetype');
+    /* Include multiple formats for compatibility */
+    font-weight: normal;
+    /* Define the font weight */
+    font-style: normal;
+    /* Define the font style */
+}
+
+
+
 body {
-    font-family: 'Arial', sans-serif;
-    background: #6b5fb5;
+    font-family: 'NougatCustom', 'Arial', sans-serif;
+    background: #2490F5;
     min-height: 100vh;
     padding: 0;
     margin: 0;
     color: #fff;
 }
 
-.container {
-    max-width: 100%;
-    margin: 0 auto;
-    padding: 20px;
-}
 
 header {
     text-align: left;
@@ -54,7 +63,7 @@ header p {
 }
 
 .brawler-card {
-    background: #2a2a2a;
+    background: #0a68bf;
     border-radius: 8px;
     overflow: hidden;
     cursor: pointer;
@@ -95,7 +104,7 @@ header p {
     right: 0;
     text-align: center;
     padding: 20px;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.7) 70%, transparent 100%);
+    background: linear-gradient(to top, rgba(0, 122, 222, 0.9) 0%, rgba(0, 122, 222, 0.7) 70%, transparent 100%);
     font-size: 1.4em;
     font-weight: bold;
     color: #fff;
@@ -332,7 +341,7 @@ header p {
     gap: 5px;
     margin-top: 10px;
     font-size: 0.9em;
-    color: #bbb;
+    color: #888;
 }
 
 .placeholder {
