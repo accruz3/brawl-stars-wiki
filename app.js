@@ -7,63 +7,38 @@ function App() {
     const [error, setError] = useState(null);
     const [view, setView] = useState('grid');
     const [comments, setComments] = useState({});
-    const [newCommentText, setNewCommentText] = useState('');
-    const [commentLoading, setCommentLoading] = useState(false);
-    const [commentCount, setCommentCount] = useState({});
-    const [commentsLoading, setCommentsLoading] = useState(false);
+    const [newComment, setNewComment] = useState('');
+    const [commentAuthor, setCommentAuthor] = useState('');
+    const [ip, setIp] = useState('');
+    const handleAddComment = (brawlerId) => {
+        if (!newComment.trim() || !commentAuthor.trim()) return;
+        const comment = {
+            id: Date.now(),
+            author: commentAuthor,
+            text: newComment,
+            date: new Date().toLocaleString()
+        };
+        setComments(prev => ({
+            ...prev,
+            [brawlerId]: [...(prev[brawlerId] || []), comment]
+        }));
+        setNewComment('');
+    };
 
     const ALL_BRAWLERS_API = 'https://ylznvr2bhf.execute-api.ap-southeast-1.amazonaws.com/default/GetAllBrawlers';
-    const ADD_COMMENT_API = 'https://s6qi0gukc4.execute-api.ap-southeast-1.amazonaws.com/default/AddComment';
-    const GET_COMMENTS_API = 'https://nmd5e5016l.execute-api.ap-southeast-1.amazonaws.com/default/GetAllComments';
-
-    const handleAddComment = async (brawlerId) => {
-        if (!newCommentText.trim()) return;
-        
-        setCommentLoading(true);
-        try {
-            const response = await fetch(ADD_COMMENT_API, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    brawlerId: String(brawlerId),  // Convert to string
-                    text: newCommentText.trim()
-                })
-            });
-
-            if (response.ok) {
-                const anonNumber = (commentCount[brawlerId] || 0) + 1;
-                const comment = {
-                    commentId: `${brawlerId}-${Date.now()}`,  // Local temp ID for display
-                    author: `Anon${anonNumber}`,
-                    commentText: newCommentText.trim(),
-                    timestamp: Math.floor(Date.now() / 1000),
-                    date: new Date().toLocaleString()
-                };
-                
-                setComments(prev => ({
-                    ...prev,
-                    [brawlerId]: [comment, ...(prev[brawlerId] || [])]
-                }));
-                
-                setCommentCount(prev => ({
-                    ...prev,
-                    [brawlerId]: anonNumber
-                }));
-                
-                setNewCommentText('');
-            } else {
-                alert('Failed to add comment. Please try again.');
-            }
-        } catch (err) {
-            console.error('Error adding comment:', err);
-            alert('Error adding comment');
-        } finally {
-            setCommentLoading(false);
-        }
-    };
 
     useEffect(() => {
         fetchBrawlers();
+        fetchHostname();
+        const handlePopState = () => {
+            const path = window.location.pathname;
+            if (path === '/' || path === '/index.html') {
+                setView('grid');
+                setSelectedBrawler(null);
+            }
+        };
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
     }, []);
 
     useEffect(() => {
@@ -85,6 +60,20 @@ function App() {
             console.error('Error fetching brawlers:', err);
         } finally {
             setLoading(false);
+        }
+    };
+
+        const fetchHostname = async () => {
+        try {
+            const response = await fetch('/hostname.txt');
+            if (response.ok) {
+                const text = await response.text();
+                if (text.trim()) {
+                    setIp(text.trim());
+                }
+            }
+        } catch (err) {
+            console.error('Error fetching hostname:', err);
         }
     };
 
@@ -133,21 +122,23 @@ function App() {
 
             {/* Sidebar (offcanvas on mobile) */}
             <nav>
-                <div className="offcanvas-md offcanvas-start bg-light text-dark" tabIndex="-1" id="sidebarOffcanvas" aria-labelledby="sidebarOffcanvasLabel" style={{ width: '220px', minHeight: '100vh' }}>
-                    <div className="offcanvas-header d-md-none">
-                        <h5 className="offcanvas-title" id="sidebarOffcanvasLabel">Brawl Stars Wiki</h5>
-                        <button type="button" className="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+                <div className="offcanvas-md offcanvas-start" tabIndex="-1" id="sidebarOffcanvas" aria-labelledby="sidebarOffcanvasLabel" style={{ width: '220px', minHeight: '100vh', background: 'linear-gradient(180deg, #0a68bf 0%, #084a8a 100%)' }}>
+
+                    <div className="offcanvas-header d-md-none" style={{ borderBottom: '1px solid rgba(255,255,255,0.2)' }}>
+                        <h5 className="offcanvas-title text-white" id="sidebarOffcanvasLabel">Brawl Stars Wiki</h5>
+                        <button type="button" className="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
                     </div>
                     <div className="offcanvas-body p-3 d-flex flex-column">
-                        <a href="#" className="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-dark text-decoration-none">
-                            <img src="https://static.vecteezy.com/system/resources/previews/027/127/543/non_2x/brawl-stars-logo-brawl-stars-icon-transparent-free-png.png" alt="Brawl Stars Wiki Logo" style={{ height: '200px', width: 'auto', display: 'block' }} />
-                        </a>
-                        <hr className="border-secondary" />
+                        <p>Hostname IP: {ip}</p>
+                        <div className="text-center mb-3">
+                            <img src="https://static.vecteezy.com/system/resources/previews/027/127/543/non_2x/brawl-stars-logo-brawl-stars-icon-transparent-free-png.png" alt="Brawl Stars Wiki Logo" style={{ height: '150px', width: 'auto', display: 'block', margin: '0 auto', filter: 'drop-shadow(2px 4px 6px rgba(0,0,0,0.3))' }} />
+                        </div>
+                        <hr style={{ borderColor: 'rgba(255,255,255,0.3)', margin: '0.5rem 0 1rem' }} />
                         <ul className="nav nav-pills flex-column mb-auto">
                             <li className="nav-item">
-                                <a href="#" className="nav-link active bg-primary text-white" style={{fontSize: '24px'}} aria-current="page">
-                                    Brawlers
-                                </a>
+                                <p href="#" className="nav-link active" style={{ fontSize: '18px', fontWeight: 'bold', background: 'rgba(255,255,255,0.2)', color: '#fff', borderRadius: '8px', padding: '12px 16px', textShadow: '1px 1px 2px rgba(0,0,0,0.3)' }} aria-current="page">
+                                    🎮 Brawlers
+                                </p>
                             </li>
                         </ul>
                     </div>
@@ -156,8 +147,12 @@ function App() {
 
             {/* Main Content */}
             <div className="flex-grow-1" style={{ background: 'none', height: '100vh', overflowY: 'auto' }}>
-                <div className="container py-4">
+                {/* Hero Header */}
+                <div className="hero-header">
+                    <h1 className="" style={{ color: '#fff', textAlign: 'center' }}>BRAWLERS</h1>
+                </div>
 
+                <div className="container py-4">
 
                     {error && <div style={{ color: 'red', textAlign: 'center', marginBottom: '20px' }}>Error: {error}</div>}
                     {loading && <div style={{ color: '#fff', textAlign: 'center', marginBottom: '20px' }}>Loading brawlers...</div>}
@@ -166,7 +161,6 @@ function App() {
 
                         {view === 'grid' ? (
                             <div>
-                                <h1 className="mb-4" style={{ color: '#fff', textAlign: 'center' }}>BRAWLERS</h1>
                                 <div className="brawler-grid">
                                     {brawlers.map(brawler => (
                                         <div
@@ -176,8 +170,8 @@ function App() {
                                         >
                                             <div className="brawler-card-image">
                                                 <img src={brawler.ImageLink} alt={brawler.Name} />
-                                                <div className="brawler-card-name-overlay">{brawler.Name}</div>
                                             </div>
+                                            <div className="brawler-card-name-overlay" title={brawler.Name}>{brawler.Name}</div>
                                         </div>
                                     ))}
                                 </div>
@@ -189,10 +183,10 @@ function App() {
                                 {selectedBrawler && (
                                     <>
                                         <div className="detail-header mb-4 text-center">
-                                            <img 
-                                                src={selectedBrawler.ImageLink} 
-                                                alt={selectedBrawler.Name} 
-                                                style={{ width: '180px', height: '180px', objectFit: 'cover', borderRadius: '1rem', marginBottom: '1rem', background: '#e0e0e0' }} 
+                                            <img
+                                                src={selectedBrawler.ImageLink}
+                                                alt={selectedBrawler.Name}
+                                                style={{ width: '180px', objectFit: 'cover', borderRadius: '1rem', marginBottom: '1rem', background: 'linear-gradient(to top, rgba(0, 122, 222, 0.9) 0%, rgba(0, 122, 222, 0.7) 70%, transparent 100%)' }}
                                             />
                                             <h2 className="fw-bold mt-2" style={{ color: '#fff' }}>{selectedBrawler.Name}</h2>
                                             <div className="detail-meta mb-2 d-flex justify-content-center gap-2">
@@ -211,7 +205,7 @@ function App() {
                                             </div>
                                             <div className="stat" style={{ color: '#333', background: '#f7f7f7', borderRadius: 8 }}>
                                                 <div className="stat-label" style={{ color: '#444' }}>Attack DMG</div>
-                                                <div className="stat-value" style={{ color: '#0a68bf' }}>{selectedBrawler.Attack?.Damage|| 'N/A'}</div>
+                                                <div className="stat-value" style={{ color: '#0a68bf' }}>{selectedBrawler.Attack?.Damage || 'N/A'}</div>
                                             </div>
                                             <div className="stat" style={{ color: '#333', background: '#f7f7f7', borderRadius: 8 }}>
                                                 <div className="stat-label" style={{ color: '#444' }}>Range</div>
@@ -283,7 +277,7 @@ function App() {
                                         {/* Comments Section */}
                                         <div className="comments-section mt-4" style={{ borderTop: '3px solid #a855f7', paddingTop: '1rem' }}>
                                             <h3 className="mb-3" style={{ color: '#fff' }}>COMMENTS</h3>
-                                            
+
                                             {/* Add Comment Form */}
                                             <div className="add-comment mb-4 p-3" style={{ background: '#f7f7f7', borderRadius: 8 }}>
 
@@ -295,7 +289,7 @@ function App() {
                                                     rows="3"
                                                     style={{ background: '#fff', color: '#333' }}
                                                 />
-                                                <button 
+                                                <button
                                                     className="btn btn-primary"
                                                     onClick={() => handleAddComment(selectedBrawler.Id)}
                                                     disabled={commentLoading || !newCommentText.trim()}
