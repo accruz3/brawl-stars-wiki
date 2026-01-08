@@ -8,6 +8,24 @@ function App() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [view, setView] = useState('grid');
+    const [comments, setComments] = useState({});
+    const [newComment, setNewComment] = useState('');
+    const [commentAuthor, setCommentAuthor] = useState('');
+
+    const handleAddComment = (brawlerId) => {
+        if (!newComment.trim() || !commentAuthor.trim()) return;
+        const comment = {
+            id: Date.now(),
+            author: commentAuthor,
+            text: newComment,
+            date: new Date().toLocaleString()
+        };
+        setComments(prev => ({
+            ...prev,
+            [brawlerId]: [...(prev[brawlerId] || []), comment]
+        }));
+        setNewComment('');
+    };
 
     const ALL_BRAWLERS_API = 'https://ylznvr2bhf.execute-api.ap-southeast-1.amazonaws.com/default/GetAllBrawlers';
 
@@ -205,6 +223,47 @@ function App() {
                                                         </div>
                                                     </div>
                                                 ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Comments Section */}
+                                        <div className="comments-section mt-4" style={{ borderTop: '3px solid #a855f7', paddingTop: '1rem' }}>
+                                            <h3 className="mb-3" style={{ color: '#fff' }}>COMMENTS</h3>
+                                            
+                                            {/* Add Comment Form */}
+                                            <div className="add-comment mb-4 p-3" style={{ background: '#f7f7f7', borderRadius: 8 }}>
+
+                                                <textarea
+                                                    className="form-control mb-2"
+                                                    placeholder="Write a comment..."
+                                                    value={newComment}
+                                                    onChange={(e) => setNewComment(e.target.value)}
+                                                    rows="3"
+                                                    style={{ background: '#fff', color: '#333' }}
+                                                />
+                                                <button 
+                                                    className="btn btn-primary"
+                                                    onClick={() => handleAddComment(selectedBrawler.Id)}
+                                                >
+                                                    Post Comment
+                                                </button>
+                                            </div>
+
+                                            {/* Comments List */}
+                                            <div className="comments-list">
+                                                {(comments[selectedBrawler.Id] || []).length === 0 ? (
+                                                    <p style={{ color: '#FFF' }}>No comments yet. Be the first to comment!</p>
+                                                ) : (
+                                                    (comments[selectedBrawler.Id] || []).map(comment => (
+                                                        <div key={comment.id} className="comment mb-3 p-3" style={{ background: '#f7f7f7', borderRadius: 8 }}>
+                                                            <div className="d-flex justify-content-between align-items-center mb-2">
+                                                                <strong style={{ color: '#0a68bf' }}>{comment.author}</strong>
+                                                                <small style={{ color: '#888' }}>{comment.date}</small>
+                                                            </div>
+                                                            <p style={{ color: '#FFF', margin: 0 }}>{comment.text}</p>
+                                                        </div>
+                                                    ))
+                                                )}
                                             </div>
                                         </div>
                                     </>
